@@ -17,6 +17,11 @@ if 'data' not in st.session_state:
 
 if choice == "Upload Data":
     st.header("Upload your data")
+    st.write("Silakan upload data yang ingin anda gunakan untuk melakukan segmentasi mahasiswa baru. Pastikan data yang diupload berformat CSV atau Excel (XLSX) dan minimal memiliki kolom sebagai berikut: PRODUCT, PRICE, PLACE, PROMOTION, PEOPLE, PROCESS, PHYSICAL EVIDENCE." 
+             " Jika terdapat kolom lain selain yang disebutkan tadi, maka tidak masalah. Namun, pastikan kolom yang disebutkan tadi ada di dalam data yang diupload."
+             " Untuk penulisan kolom, pastikan menggunakan huruf kapital dan tidak ada spasi.")
+    st.write("**Contoh dataset yang benar:**")
+    st.image("Contoh_Dataset.jpg", use_column_width=True)
     uploaded_file = st.file_uploader("Choose a file", type=["csv", "xlsx"])
     
     if uploaded_file:
@@ -44,6 +49,7 @@ if st.session_state['data'] is not None:
         st.header("Data Preprocessing")
         
         st.write("## Handle Duplicate Rows")
+        st.write("Centang Checkbox untuk menampilkan baris duplikat. Kemudian klik 'Remove Duplicates' untuk menghapus baris duplikat.")
         if st.checkbox("Show Duplicate Rows"):
             st.write(df[df.duplicated()])
         
@@ -51,12 +57,13 @@ if st.session_state['data'] is not None:
             df = df.drop_duplicates()
             st.session_state['data'] = df  # Update session state
             st.success("Duplicates removed")
+        st.write("Centang checkbox kembali untuk melakukan pengecekan setelah menghapus baris duplikat.")
 
         st.write("## Handle Missing Values")
         if st.checkbox("Show Missing Values"):
             st.write(df.isnull().sum())
         
-        st.write("Choose a method to handle missing values and then click 'Handle Missing Values'")
+        st.write("Pilih metode yang ingin dilakukan untk menghandle missing value lalu tekan tombol 'Handle Missing Values'")
         method = st.selectbox("Select a method to handle missing values", ["Drop rows with missing values", "Fill missing values with mean", "Fill missing values with median", "Fill missing values with specific value"])
         if method == "Fill missing values with specific value":
             specific_value = st.number_input("Enter the specific value to fill NaNs", value=0)
@@ -76,13 +83,29 @@ if st.session_state['data'] is not None:
             st.success("Missing values handled")
 
         st.write("## Handle Outliers")
-        if st.checkbox("Show Boxplot for Outliers"):
+        st.write("Centang checkbox untuk mengecek outliers di masing-masing kolom")
+        # Fitur untuk menampilkan boxplot per kolom sesuai pilihan pengguna
+        if st.checkbox("Show Boxplot for Outliers (Select a Column)"):
             numeric_columns = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
             column = st.selectbox("Select a column", numeric_columns)
             fig, ax = plt.subplots()
             sns.boxplot(df[column], ax=ax)
             st.pyplot(fig)
 
+        st.write("Centang checkbox untuk menampilkan semua boxplot dari seluruh kolom")
+        # Fitur untuk menampilkan semua boxplot dari seluruh kolom numerik dalam satu gambar
+        if st.checkbox("Show Boxplot for All Numeric Columns"):
+            numeric_columns = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
+            if numeric_columns:
+                fig, ax = plt.subplots(figsize=(12, 6))
+                sns.boxplot(data=df[numeric_columns], ax=ax)
+                ax.set_title("Boxplot for All Numeric Columns")
+                st.pyplot(fig)
+            else:
+                st.error("No numeric columns to display.")
+
+        st.write("Lakukan pengecekan kembali setiap menghandle outliers. Jika masih terdapat outliers silakan lakukan penghandlean kembali")
+        # Tombol untuk menangani outliers dengan median
         if st.button("Handle Outliers with Median"):
             outlier_columns = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
             for col in outlier_columns:
@@ -92,40 +115,29 @@ if st.session_state['data'] is not None:
                 upper_bound = median + 2 * std_dev
                 lower_bound = median - 2 * std_dev
 
-                # Create masks for the outliers
+                # Buat mask untuk mendeteksi outliers
                 upper_mask = df[col] > upper_bound
                 lower_mask = df[col] < lower_bound
 
-                # Replace outliers with median
+                # Gantikan outliers dengan median
                 df.loc[upper_mask, col] = median
                 df.loc[lower_mask, col] = median
 
-            st.session_state['data'] = df  # Update session state
+            st.session_state['data'] = df  # Perbarui session state
             st.success("Outliers handled with median")
-
-        st.write("## Scaling Data")
-        if st.button("Scale Data"):
-            try:
-                scaler = StandardScaler()
-                df[df.columns] = scaler.fit_transform(df[df.columns])
-                st.session_state['data'] = df  # Update session state
-                st.success("Data scaled successfully!")
-                st.write(df)
-            except Exception as e:
-                st.error(f"Error: {e}")
-
-        st.session_state['data'] = df
     
     elif choice == "Data Visualization":
         st.header("Data Visualization")
         
         st.write("## Correlation Heatmap")
+        st.write("Heatmap di bawah menunjukkan korelasi antara kolom-kolom data. Semakin mendekati 1 maka korelasinya semakin kuat.")
         if st.checkbox("Show Correlation Heatmap"):
             fig, ax = plt.subplots()
             sns.heatmap(df.corr(), annot=True, cmap='coolwarm', ax=ax)
             st.pyplot(fig)
 
         st.write("## Bar Plot")
+        st.write("Menunjukkan banyak persebaran nilai tertentu dalam sebuah kolom menggunakan grafik batang")
         numeric_columns = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
         column = st.selectbox("Select a feature for bar plot", numeric_columns)
 
@@ -139,6 +151,7 @@ if st.session_state['data'] is not None:
         st.header("Clustering")
         
         st.write("## Elbow Method to Determine Optimal k")
+        st.write("Pilih titik yang menjadi awal melandainya grafik sebagai titik siku pada grafik. Titik tersebut adalah jumlah cluster yang optimal untuk data Anda")
         
         # Function to calculate inertia
         def calculate_inertia(df, k_range):
@@ -164,6 +177,7 @@ if st.session_state['data'] is not None:
         inertia_values = calculate_inertia(df, k_range)
         plot_elbow(k_range, inertia_values)
 
+        st.write("Silakan input nilai klaster yang diinginkan. Nilai klaster dapat diganti sesuai dengan prefrensi Anda")
         k = st.number_input("Select the number of clusters (k)", min_value=2, max_value=10)
         
         def clustering(data, optimal_k):
@@ -211,7 +225,9 @@ if st.session_state['data'] is not None:
             except Exception as e:
                 st.error(f"Error: {e}")
 
+
         st.write("## Cluster Visualization")
+        st.write("Centang checkbox untuk menghasilkan visualisasi clustering dalam scatter plot")
         if 'cluster_data' in st.session_state:
             if st.checkbox("Show Cluster Scatter Plot"):
                 try:
@@ -248,10 +264,29 @@ if st.session_state['data'] is not None:
             cluster_data = st.session_state['cluster_data']
 
             for cluster in sorted(cluster_data['Cluster'].unique()):
-                st.write(f"**Cluster {cluster}**")
+                st.write(f"### Cluster {cluster}")
                 cluster_subset = cluster_data[cluster_data['Cluster'] == cluster]
-                cluster_description = cluster_subset[features].mean()
-                st.write(cluster_description)
+
+                # Calculate mean of each feature for the cluster
+                cluster_mean = cluster_subset[features].mean()
+
+                # Calculate the overall mean for the cluster (across all columns)
+                overall_cluster_mean = cluster_mean.mean()
+                
+                # Find the column with the highest average value
+                highest_avg_column = cluster_mean.idxmax()
+                highest_avg_value = cluster_mean.max()
+
+                # Display the insights for the cluster
+                st.write(f"##### Insight untuk Cluster {cluster}:")
+                st.write(f"- Rata-rata keseluruhan nilai di cluster ini adalah **{overall_cluster_mean:.2f}**.")
+                st.write(f"- Kolom dengan rata-rata tertinggi adalah **{highest_avg_column}** dengan nilai **{highest_avg_value:.2f}**.")
+
+            # Provide general overview of clusters
+            st.write("### Overview of All Clusters:")
+            overall_mean = cluster_data.groupby('Cluster').mean()
+            st.write("Rata-rata keseluruhan per cluster:")
+            st.write(overall_mean)
     
     elif choice == "Evaluation":
         st.header("Model Evaluation")
