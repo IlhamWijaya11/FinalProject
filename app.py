@@ -264,7 +264,7 @@ if st.session_state['data'] is not None:
             cluster_data = st.session_state['cluster_data']
 
             for cluster in sorted(cluster_data['Cluster'].unique()):
-                st.write(f"### Cluster {cluster}")
+                st.write(f"### Cluster {cluster + 1}")
                 cluster_subset = cluster_data[cluster_data['Cluster'] == cluster]
 
                 # Calculate mean of each feature for the cluster
