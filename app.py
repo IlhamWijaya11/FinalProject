@@ -278,7 +278,7 @@ if st.session_state['data'] is not None:
                 highest_avg_value = cluster_mean.max()
 
                 # Display the insights for the cluster
-                st.write(f"##### Insight untuk Cluster {cluster}:")
+                st.write(f"##### Insight untuk Cluster {cluster + 1}:")
                 st.write(f"- Rata-rata keseluruhan nilai di cluster ini adalah **{overall_cluster_mean:.2f}**.")
                 st.write(f"- Kolom dengan rata-rata tertinggi adalah **{highest_avg_column}** dengan nilai **{highest_avg_value:.2f}**.")
 
